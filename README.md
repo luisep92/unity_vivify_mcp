@@ -1,287 +1,161 @@
-<img width="676" height="380" alt="MCP for Unity" src="docs/images/logo.png" />
+# unity-mcp — Unity 2019.4 minimal port
 
-| [English](README.md) | [简体中文](docs/i18n/README-zh.md) |
-|----------------------|---------------------------------|
+Fork minimal de [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp) adaptado a **Unity 2019.4 LTS**, motivado por el ecosistema Vivify de Beat Saber (la doc oficial de Vivify recomienda 2019.4.28f1 para máxima compatibilidad con BS).
 
-#### Proudly sponsored and maintained by [Coplay](https://www.coplay.dev/?ref=unity-mcp) -- the best AI assistant for Unity.
-##### And don't miss [Godot A](https://github.com/hi-godot/godot-ai)I 🤖, the new free MCP/AI project from the makers of MCP for Unity!
+El upstream declara `"unity": "2021.3"` y depende de APIs y sintaxis post-2019: UI Toolkit con USS post-2021, `com.unity.nuget.newtonsoft-json` (registry 2020.1+), 41+ sites de C# 8/9 (switch expressions, range syntax, `using` declarations…). Este fork strippa lo que no usamos y reescribe el resto a APIs disponibles en 2019.4 + C# 7.3.
 
-[![Discord](https://img.shields.io/badge/discord-join-red.svg?logo=discord&logoColor=white)](https://discord.gg/y4p8KfzrN4)
-[![](https://img.shields.io/badge/Website-Visit-purple)](https://www.coplay.dev/?ref=unity-mcp)
-[![](https://img.shields.io/badge/Unity-000000?style=flat&logo=unity&logoColor=blue 'Unity')](https://unity.com/releases/editor/archive)
-[![Unity Asset Store](https://img.shields.io/badge/Unity%20Asset%20Store-Get%20Package-FF6A00?style=flat&logo=unity&logoColor=white)](https://assetstore.unity.com/packages/tools/generative-ai/mcp-for-unity-ai-driven-development-329908)
-[![python](https://img.shields.io/badge/Python-3.10+-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org)
-[![](https://badge.mcpx.dev?status=on 'MCP Enabled')](https://modelcontextprotocol.io/introduction)
-[![](https://img.shields.io/badge/License-MIT-red.svg 'MIT License')](https://opensource.org/licenses/MIT)
+> **Estado**: operativo end-to-end contra `VivifyTemplate` (Unity 2019.4.28f1, Beat Saber 1.34.2 + mods Aeroluna). Validado con `read_console`, `refresh_unity`, `execute_code` desde Claude Code via stdio.
 
-**Create your Unity apps with LLMs!** MCP for Unity bridges AI assistants (Claude, Claude Code, Cursor, VS Code, etc.) with your Unity Editor via the [Model Context Protocol](https://modelcontextprotocol.io/introduction). Give your LLM the tools to manage assets, control scenes, edit scripts, and automate tasks.
+## Cómo se usa (TL;DR)
 
-<img alt="MCP for Unity building a scene" src="docs/images/building_scene.gif">
+Asume que tienes Unity 2019.4 instalado, [`uv`](https://docs.astral.sh/uv/) en PATH, y Claude Code (CLI o extensión VSCode).
 
-<details>
-<summary><strong>Recent Updates</strong></summary>
-
-* **v9.6.3 (beta)** — New `manage_profiler` tool (14 actions): Profiler session control (start/stop/status/set areas), frame timing and counter reads, object memory queries, memory snapshots (take/list/compare via com.unity.memoryprofiler), and Frame Debugger (enable/disable/get events). Group: `profiling`.
-* **v9.6.2** — New `manage_physics` tool (21 actions): physics settings, layer collision matrix, physics materials, joints (5 3D + 9 2D types), queries (raycast, raycast_all, linecast, shapecast, overlap), force application (AddForce/AddTorque/AddExplosionForce), rigidbody configuration, scene-wide validation, and edit-mode simulation. Full 3D and 2D support.
-* **v9.6.1** — QoL extensions: `manage_editor` gains undo/redo actions. `manage_scene` gains multi-scene editing (additive load, close, set active, move GO between scenes), scene templates (3d_basic, 2d_basic, etc.), and scene validation with auto-repair. New `manage_build` tool: trigger player builds, switch platforms, configure player settings, manage build scenes and profiles (Unity 6+), run batch builds across multiple platforms, and async job tracking with polling. New `MaxPollSeconds` infrastructure for long-running tool operations.
-* **v9.5.4** — New `unity_reflect` and `unity_docs` tools for API verification: inspect live C# APIs via reflection and fetch official Unity documentation (ScriptReference, Manual, package docs). New `manage_packages` tool: install, remove, search, and manage Unity packages and scoped registries. Includes input validation, dependency checks on removal, and git URL warnings.
-* **v9.5.3** — New `manage_graphics` tool (33 actions): volume/post-processing, light baking, rendering stats, pipeline settings, URP renderer features. 3 new resources: `volumes`, `rendering_stats`, `renderer_features`.
-* **v9.5.2** — New `manage_camera` tool with Cinemachine support (presets, priority, noise, blending, extensions), `cameras` resource, priority persistence fix via SerializedProperty.
-
-<details>
-<summary>Older releases</summary>
-
-* **v9.4.8** — New editor UI, real-time tool toggling via `manage_tools`, skill sync window, multi-view screenshot, one-click Roslyn installer, Qwen Code & Gemini CLI clients, ProBuilder mesh editing via `manage_probuilder`.
-* **v9.4.7** — Per-call Unity instance routing, macOS pyenv PATH fix, domain reload resilience for script tools.
-* **v9.4.6** — New `manage_animation` tool, Cline client support, stale connection detection, tool state persistence across reloads.
-* **v9.4.4** — Configurable `batch_execute` limits, tool filtering by session state, IPv6/IPv4 loopback fixes.
-
-</details>
-</details>
-
----
-
-## Quick Start
-
-### Prerequisites
-
-* **Unity 2021.3 LTS+** — [Download Unity](https://unity.com/download)
-* **Python 3.10+** and **uv** — [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
-* **An MCP Client** — [Claude Desktop](https://claude.ai/download) | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | [Cursor](https://www.cursor.com/en/downloads) | [VS Code Copilot](https://code.visualstudio.com/docs/copilot/overview) | [GitHub Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli) | [OpenClaw](https://openclaw.ai)
-
-### 1. Install the Unity Package
-
-In Unity: `Window > Package Manager > + > Add package from git URL...`
-
-> [!TIP]
-> ```text
-> https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main
-> ```
-
-**Want the latest beta?** Use the beta branch:
-```text
-https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#beta
-```
-
-<details>
-<summary>Other install options (Asset Store, OpenUPM)</summary>
-
-**Unity Asset Store:**
-1. Visit [MCP for Unity on the Asset Store](https://assetstore.unity.com/packages/tools/generative-ai/mcp-for-unity-ai-driven-development-329908)
-2. Click `Add to My Assets`, then import via `Window > Package Manager`
-
-**OpenUPM:**
 ```bash
-openupm add com.coplaydev.unity-mcp
-```
-</details>
+# 1. Clona el fork
+git clone git@github.com:luisep92/unity_vivify_mcp.git unity-mcp
+cd unity-mcp
 
-### 2. Start the Server & Connect
+# 2. Engancha el upstream original (opcional, para futuros rebases / PR)
+git remote add upstream https://github.com/CoplayDev/unity-mcp.git
 
-1. In Unity: `Window > MCP for Unity`
-2. Click **Start Server** (launches HTTP server on `localhost:8080`)
-3. Select your MCP Client from the dropdown and click **Configure**
-4. Look for 🟢 "Connected ✓"
-5. **Connect your client:** Some clients (Cursor, Antigravity, OpenClaw) require enabling an MCP toggle or plugin in settings. OpenClaw also needs the `openclaw-mcp-bridge` plugin enabled and follows the currently selected MCP for Unity transport (`HTTP` or `stdio`). Others (Claude Desktop, Claude Code) auto-connect after configuration.
+# 3. Registra el server Python en Claude Code (scope user para que la extensión VSCode lo vea)
+claude mcp add -s user unity-mcp -- uv run --directory <ruta-absoluta>/unity-mcp/Server mcp-for-unity --transport stdio
 
-**That's it!** Try a prompt like: *"Create a red, blue and yellow cube"* or *"Build a simple player controller"*
-
----
-
-<details>
-<summary><strong>Features & Tools</strong></summary>
-
-### Key Features
-* **Natural Language Control** — Instruct your LLM to perform Unity tasks
-* **Powerful Tools** — Manage assets, scenes, materials, scripts, and editor functions
-* **Automation** — Automate repetitive Unity workflows
-* **Extensible** — Works with various MCP Clients
-
-### Available Tools
-`apply_text_edits` • `batch_execute` • `create_script` • `debug_request_context` • `delete_script` • `execute_custom_tool` • `execute_menu_item` • `find_gameobjects` • `find_in_file` • `get_sha` • `get_test_job` • `manage_animation` • `manage_asset` • `manage_build` • `manage_camera` • `manage_components` • `manage_editor` • `manage_gameobject` • `manage_graphics` • `manage_material` • `manage_packages` • `manage_physics` • `manage_prefabs` • `manage_probuilder` • `manage_profiler` • `manage_scene` • `manage_script` • `manage_script_capabilities` • `manage_scriptable_object` • `manage_shader` • `manage_texture` • `manage_tools` • `manage_ui` • `manage_vfx` • `read_console` • `refresh_unity` • `run_tests` • `script_apply_edits` • `set_active_instance` • `unity_docs` • `unity_reflect` • `validate_script`
-
-### Available Resources
-`cameras` • `custom_tools` • `renderer_features` • `rendering_stats` • `volumes` • `editor_active_tool` • `editor_prefab_stage` • `editor_selection` • `editor_state` • `editor_windows` • `gameobject` • `gameobject_api` • `gameobject_component` • `gameobject_components` • `get_tests` • `get_tests_for_mode` • `menu_items` • `prefab_api` • `prefab_hierarchy` • `prefab_info` • `project_info` • `project_layers` • `project_tags` • `tool_groups` • `unity_instances`
-
-**Performance Tip:** Use `batch_execute` for multiple operations — it's 10-100x faster than individual calls!
-</details>
-
-<details>
-<summary><strong>Manual Configuration</strong></summary>
-
-If auto-setup doesn't work, add this to your MCP client's config file:
-
-**HTTP (default — works with Claude Desktop, Cursor, Windsurf):**
-```json
-{
-  "mcpServers": {
-    "unityMCP": {
-      "url": "http://localhost:8080/mcp"
-    }
-  }
-}
+# 4. En tu proyecto Unity, añade el package en Packages/manifest.json:
+#    "com.coplaydev.unity-mcp": "file:<ruta-relativa-al-Packages>/unity-mcp/MCPForUnity"
 ```
 
-**VS Code:**
-```json
-{
-  "servers": {
-    "unityMCP": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp"
-    }
-  }
-}
+Abre Unity con tu proyecto. En `Window > MCP For Unity`:
+
+1. **Use Stdio Transport** (la primera vez — fija el modo en EditorPrefs).
+2. **Toggle Bridge** (arranca el listener TCP en port 6400).
+3. **Bridge Status** debe loggear `running: True (mode: stdio, port: 6400)`.
+
+Reinicia Claude Code (cierra y reabre la extensión VSCode o el CLI). En la nueva sesión deben aparecer las herramientas `mcp__unity-mcp__*` (`read_console`, `refresh_unity`, `execute_code`, `manage_asset`, `manage_animation`, etc.). Smoke test rápido: pide a Claude `read_console` con count 5; debe devolver entradas reales de la Console de Unity.
+
+### Prerequisitos del proyecto host
+
+- **Newtonsoft.Json.dll en algún sitio del proyecto.** El asmdef de este package lo lista como `precompiledReferences` con `overrideReferences: false`, así que recoge cualquier DLL llamado `Newtonsoft.Json.dll` que esté en el proyecto. VivifyTemplate ya trae uno en `Assets/VivifyTemplate/Exporter/Dependencies/`. Si tu proyecto no lo trae, copia uno (NuGet 13.0.x net45) a `Plugins/` del proyecto.
+- **Unity 2019.4.x.** Versiones más nuevas pueden funcionar pero pierdes el motivo del fork; usa upstream directamente si estás en 2021.3+.
+
+## Qué se borró respecto a upstream
+
+Strip agresivo orientado a Claude Code stdio + workflow Vivify. Los commits están etiquetados `Drop ...` para cherry-pick.
+
+| Borrado | Motivo |
+|---|---|
+| `Editor/Windows/` (wizard UI Toolkit completo) | UI Toolkit con USS/UXML post-2021 |
+| `Editor/Setup/` (Roslyn installer, skill installer, sync) | No necesario; configuramos a mano |
+| 21 client configurators (`Cursor`, `Windsurf`, `Codex`, `Cline`, `Gemini`, etc.) | Solo usamos `claude mcp add` |
+| `Editor/Clients/` entero | El Claude Code configurator nunca se invocaba sin la wizard |
+| `Editor/Migrations/`, `Editor/Dependencies/`, `McpCiBoot.cs` | Fresh install, no migration/CI |
+| Services no-core: `PackageDeployment`, `PackageUpdate`, `PackageJobManager`, `ServerManagement`, `TestRunner`, `TestJobManager`, `ResourceDiscovery`, `EditorPrefsWindowService`, `ClientConfigurationService` | El server Python lo lanza Claude Code; Unity es listener pasivo |
+| `Editor/Tools/Build/` + `ManageBuild.cs` | Vivify usa su propio build (F5) |
+| `Editor/Tools/{ProBuilder, Profiler, Vfx, Graphics}/` | APIs post-2020 (`LightingSettings`, `ProfilerCategory`, `Unity.Profiling.LowLevel.Unsafe`) o no-aplicables |
+| `Editor/Tools/{ManagePackages, ManageUI, ManageTexture, BatchExecute, RunTests, GetTestJob}.cs` | Fuera de scope para Aline |
+| `Editor/Resources/Scene/{Volumes, RenderingStats, RendererFeatures}Resource.cs` | Dependían de Graphics tools borradas |
+| `Editor/Resources/Tests/` | Dependía de TestRunner |
+| `External/Tommy.cs` (~2k LOC TOML parser) | Solo lo usaba `CodexConfigHelper` (borrado) |
+| `Helpers/{McpConfigurationHelper, CodexConfigHelper, ConfigJsonBuilder}.cs` | Solo usados por `Editor/Clients/` |
+| HTTP transport handlers (`HttpAutoStartHandler`, `HttpBridgeReloadHandler`) | Stdio basta para single-agent Claude Code |
+
+## Qué se mantuvo
+
+Listener bridge stdio + dispatcher de comandos + un subset de tools válidos para el workflow Vivify:
+
+- **Tools Animation**: `ControllerCreate`, `ControllerLayers`, `ControllerBlendTrees`, `ClipCreate`, `ClipPresets`, `AnimatorRead`, `AnimatorControl`, `ManageAnimation`.
+- **Tools Asset/Material/Shader/Script**: `ManageAsset`, `ManageMaterial`, `ManageShader`, `ManageScript`, `ManageScriptableObject`.
+- **Tools Prefab/Scene/GameObject**: `ManagePrefabs`, `ManageScene`, `ManageGameObject`, `ManageComponents`, `FindGameObjects`.
+- **Tools editor**: `RefreshUnity`, `ReadConsole`, `ExecuteCode`, `ExecuteMenuItem`, `ManageEditor`, `UnityReflect`.
+- **Tools Camera/Physics**: `ManageCamera` (Cinemachine), `ManagePhysics` (sin tocar — funciona en 2019.4).
+- **Bridge**: `StdioBridgeHost` + `TransportManager` + `BridgeControlService` + `MCPServiceLocator` (pelado).
+- **Server Python**: sin cambios. El upstream Python es 2019-agnostic.
+
+## Qué se reescribió a C# 7.3
+
+Unity 2019.4 fija el lenguaje en C# 7.3. Los siguientes patrones fueron reemplazados en todos los ficheros mantenidos:
+
+- **Switch expressions** (`x switch { ... }`) → switch statements clásicos.
+- **Negated declaration patterns** (`x is not T y`) → `!(x is T y)`.
+- **Null-coalescing assignment** (`??=`) → `if (x == null) x = ...`.
+- **Target-typed `new()`** → constructor explícito (`new Dictionary<K,V>()`).
+- **Range/index syntax** (`s[..n]`, `s[n..]`, `s[..^n]`) → `Substring` / `Skip`.
+- **`using` declarations** (`using var x = ...;`) → `using (var x = ...) { ... }` blocks.
+- **`#nullable disable`** directives → eliminadas (no soportadas por el preprocesador 7.3).
+- **Null-forgiving operator** (`x!.Foo`) → eliminado (asumiendo no-null).
+
+## Qué se shim-eó a APIs 2019.4
+
+- `PrefabStageUtility` y `PrefabStage` viven en `UnityEditor.Experimental.SceneManagement` (no en `UnityEditor.SceneManagement` — eso es 2020.1+).
+- `PrefabStage.assetPath` → `PrefabStage.prefabAssetPath`.
+- `PrefabStageUtility.OpenPrefab(string)` → `AssetDatabase.OpenAsset(prefabAsset)` + `GetCurrentPrefabStage()`.
+- `string.Contains(char)` → `string.Contains(string)`.
+- `string.Replace(string, string, StringComparison)` → `string.Replace(string, string)`.
+- `string.Contains(string, StringComparison)` → `IndexOf(string, StringComparison) >= 0`.
+- `Math.Clamp(int, int, int)` → `Math.Max(min, Math.Min(max, value))`.
+- `Task.IsCompletedSuccessfully` → `Task.Status == TaskStatus.RanToCompletion`.
+- `Dictionary.Remove(TKey, out TValue)` → `TryGetValue` + `Remove(TKey)`.
+- `MaterialPropertyBlock.HasColor` → heurística con `GetColor` y comparación contra `Color.clear`.
+- `Object.FindObjectsOfType(Type, bool includeInactive)` → `FindObjectsOfType(Type)` (perdemos `includeInactive` en 2019.4).
+- `Selection.count` → `Selection.objects.Length`.
+
+## Cambios de comportamiento
+
+- **Stdio es transport por defecto** (era HTTP). El minimal port solo tiene sentido como single-agent contra Claude Code; HTTP requería el `ServerManagementService` que se borró.
+- **Menu Items reducidos** (`Window > MCP For Unity`):
+  - `Toggle Bridge` — arranca/para el listener stdio.
+  - `Bridge Status` — loggea estado, modo, port.
+  - `Use Stdio Transport` / `Use HTTP Transport` — flip de `EditorPrefs.UseHttpTransport`.
+- **`execute_code` con retry-on-bad-DLL.** El compilador CodeDom de .NET Framework abortaba la compilación entera al encontrar una DLL con metadata corrupta (la `Newtonsoft.Json.dll` legacy de VivifyTemplate). Ahora el tool detecta el patrón "Metadata file 'X' does not contain valid metadata", droppea esa DLL del set de referencias y reintenta hasta 8 veces.
+
+## Limitaciones conocidas
+
+- **No `run_tests`** — Unity Test Framework no expuesto vía MCP (TestRunnerService borrado). Si lo necesitas, cherry-pick desde upstream.
+- **No Graphics tools** — sin volumes, light baking, render stats, renderer features. Las APIs son post-2020.
+- **`execute_code` salta DLLs ilegibles silenciosamente.** Las DLLs droppeadas no aparecen en el reference set; código que use sus tipos falla de compilación con un mensaje confuso. Caso real: VivifyTemplate's `Newtonsoft.Json.dll` (legacy PE32 Mono build) — usa `Newtonsoft.Json.Linq` desde tools mantenidos del package, no desde `execute_code` ad-hoc.
+- **`includeInactive` no funciona en `FindObjectsOfType`** — Unity 2019.4 no expone esa overload. Los tools que la pidan ignoran el parámetro.
+- **Sin wizard UI** — toda la configuración via menu items + EditorPrefs + `claude mcp add` desde terminal.
+
+## Relación con upstream
+
+```bash
+# Inspeccionar el delta del fork
+git log --oneline upstream/beta..HEAD
+
+# Sync con upstream (cuando suban changes)
+git fetch upstream
+git rebase upstream/beta   # o cherry-pick selectivo
+
+# Para PR upstream: hacer fork de CoplayDev/unity-mcp en GitHub UI,
+# añadirlo como remote (e.g. coplay-fork), pushear el branch y abrir PR contra `beta`.
 ```
 
-<details>
-<summary>Stdio configuration (uvx)</summary>
+Los commits están organizados con un cambio conceptual cada uno y mensajes descriptivos en inglés, pensados para que un PR upstream sea limpio. La superficie afectada es grande — más viable como reference que como merge directo.
 
-**macOS/Linux:**
-```json
-{
-  "mcpServers": {
-    "unityMCP": {
-      "command": "uvx",
-      "args": ["--from", "mcpforunityserver", "mcp-for-unity", "--transport", "stdio"]
-    }
-  }
-}
+## Estructura del repo
+
+```
+MCPForUnity/                  # Package Unity (lo que se referencia desde manifest.json)
+  Editor/                     # Bridge + tools + services
+  Runtime/                    # Helpers serializables (Newtonsoft converters, etc.)
+  package.json                # unity: 2019.4 (no 2021.3)
+Server/                       # Python MCP server (sin cambios respecto a upstream)
+  src/main.py
+  pyproject.toml              # mcp-for-unity = "main:main"
+CLAUDE.md                     # Doc original del upstream
+README.md                     # Este archivo
 ```
 
-**Windows:**
-```json
-{
-  "mcpServers": {
-    "unityMCP": {
-      "command": "C:/Users/YOUR_USERNAME/AppData/Local/Microsoft/WinGet/Links/uvx.exe",
-      "args": ["--from", "mcpforunityserver", "mcp-for-unity", "--transport", "stdio"]
-    }
-  }
-}
-```
-</details>
-</details>
+## Troubleshooting
 
-<details>
-<summary><strong>Multiple Unity Instances</strong></summary>
+**El menú `Window > MCP For Unity` no aparece tras instalar el package.**
+Compilación silenciosa fallida. Mira si `Library/ScriptAssemblies/` existe en tu proyecto Unity — si no hay DLLs ahí, hay un conflict de DLL o asmdef roto. Causa típica: dos `Newtonsoft.Json.dll` solapando plataformas. Fix: dejar solo uno.
 
-MCP for Unity supports multiple Unity Editor instances. To target a specific one:
+**`Toggle Bridge` arranca pero falla con "Connection failed... WebSocket".**
+Estás en modo HTTP. `Window > MCP For Unity > Use Stdio Transport`, luego Toggle Bridge.
 
-1. Ask your LLM to check the `unity_instances` resource
-2. Use `set_active_instance` with the `Name@hash` (e.g., `MyProject@abc123`)
-3. All subsequent tools route to that instance
-</details>
+**`claude mcp list` muestra unity-mcp Connected pero la extensión VSCode no ve los tools.**
+Scope problem. Reinstala con `claude mcp add -s user ...` (no scope-local).
 
-<details>
-<summary><strong>Roslyn Script Validation (Advanced)</strong></summary>
-
-For **Strict** validation that catches undefined namespaces, types, and methods:
-
-1. Install [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity)
-2. `Window > NuGet Package Manager` → Install `Microsoft.CodeAnalysis` v5.0
-3. Also install `SQLitePCLRaw.core` and `SQLitePCLRaw.bundle_e_sqlite3` v3.0.2
-4. Add `USE_ROSLYN` to `Player Settings > Scripting Define Symbols`
-5. Restart Unity
-
-  <details>
-  <summary>One-click installer (recommended)</summary>
-
-  Open `Window > MCP for Unity`, scroll to the **Runtime Code Execution (Roslyn)** section in the Scripts/Validation tab, and click **Install Roslyn DLLs**. This downloads the required NuGet packages and places the DLLs in `Assets/Plugins/Roslyn/` automatically.
-
-  You can also run it from the menu: `Window > MCP For Unity > Install Roslyn DLLs`.
-  </details>
-
-  <details>
-  <summary>Manual DLL installation (if the installer isn't available)</summary>
-
-  1. Download `Microsoft.CodeAnalysis.CSharp.dll` and dependencies from [NuGet](https://www.nuget.org/packages/Microsoft.CodeAnalysis.CSharp/)
-  2. Place DLLs in `Assets/Plugins/Roslyn/` folder
-  3. Ensure .NET compatibility settings are correct
-  4. Add `USE_ROSLYN` to Scripting Define Symbols
-  5. Restart Unity
-  </details>
-</details>
-
-<details>
-<summary><strong>Troubleshooting</strong></summary>
-
-* **Unity Bridge Not Connecting:** Check `Window > MCP for Unity` status, restart Unity
-* **Server Not Starting:** Verify `uv --version` works, check the terminal for errors
-* **Client Not Connecting:** Ensure the HTTP server is running and the URL matches your config
-
-**Detailed setup guides:**
-* [Fix Unity MCP and Cursor, VSCode & Windsurf](https://github.com/CoplayDev/unity-mcp/wiki/1.-Fix-Unity-MCP-and-Cursor,-VSCode-&-Windsurf) — uv/Python installation, PATH issues
-* [Fix Unity MCP and Claude Code](https://github.com/CoplayDev/unity-mcp/wiki/2.-Fix-Unity-MCP-and-Claude-Code) — Claude CLI installation
-* [Common Setup Problems](https://github.com/CoplayDev/unity-mcp/wiki/3.-Common-Setup-Problems) — macOS dyld errors, FAQ
-
-Still stuck? [Open an Issue](https://github.com/CoplayDev/unity-mcp/issues) or [Join Discord](https://discord.gg/y4p8KfzrN4)
-</details>
-
-<details>
-<summary><strong>Contributing</strong></summary>
-
-See [README-DEV.md](docs/development/README-DEV.md) for development setup. For custom tools, see [CUSTOM_TOOLS.md](docs/reference/CUSTOM_TOOLS.md).
-
-1. Fork → Create issue → Branch (`feature/your-idea`) → Make changes → PR
-</details>
-
-<details>
-<summary><strong>Telemetry & Privacy</strong></summary>
-
-Anonymous, privacy-focused telemetry (no code, no project names, no personal data). Opt out with `DISABLE_TELEMETRY=true`. See [TELEMETRY.md](docs/reference/TELEMETRY.md).
-</details>
-
-<details>
-<summary><strong>Security</strong></summary>
-
-Network defaults are intentionally fail-closed:
-* **HTTP Local** allows loopback-only hosts by default (`127.0.0.1`, `localhost`, `::1`).
-* Bind-all interfaces (`0.0.0.0`, `::`) require explicit opt-in in **Advanced Settings** via **Allow LAN Bind (HTTP Local)**.
-* **HTTP Remote** requires `https://` by default.
-* Plaintext `http://` for remote endpoints requires explicit opt-in via **Allow Insecure Remote HTTP**.
-</details>
-
----
-
-**License:** MIT — See [LICENSE](LICENSE) | **Need help?** [Discord](https://discord.gg/y4p8KfzrN4) | [Issues](https://github.com/CoplayDev/unity-mcp/issues)
-
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=CoplayDev/unity-mcp&type=Date)](https://www.star-history.com/#CoplayDev/unity-mcp&Date)
-
-<details>
-<summary><strong>Citation for Research</strong></summary>
-If you are working on research that is related to Unity-MCP, please cite us!
-
-```bibtex
-@inproceedings{10.1145/3757376.3771417,
-author = {Wu, Shutong and Barnett, Justin P.},
-title = {MCP-Unity: Protocol-Driven Framework for Interactive 3D Authoring},
-year = {2025},
-isbn = {9798400721366},
-publisher = {Association for Computing Machinery},
-address = {New York, NY, USA},
-url = {https://doi.org/10.1145/3757376.3771417},
-doi = {10.1145/3757376.3771417},
-series = {SA Technical Communications '25}
-}
-```
-</details>
-
-## Unity AI Tools by Coplay
-
-Coplay offers 3 AI tools for Unity:
-- **MCP for Unity** is available freely under the MIT license.
-- **Coplay** is a premium Unity AI assistant that sits within Unity and is more than the MCP for Unity.
-- **Coplay MCP** a free-for-now MCP for Coplay tools.
-
-(These tools have different tech stacks. See this blog post [comparing Coplay to MCP for Unity](https://coplay.dev/blog/coplay-vs-coplay-mcp-vs-unity-mcp).)
-
-<img alt="Coplay" src="docs/images/coplay-logo.png" />
-
-## Disclaimer
-
-This project is a free and open-source tool for the Unity Editor, and is not affiliated with Unity Technologies.
+**`execute_code` falla con "Metadata file '...Newtonsoft.Json.dll' does not contain valid metadata".**
+Bug ya corregido — actualiza al último commit del fork.

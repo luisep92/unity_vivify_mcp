@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+> **Fork notice.** This is a Unity 2019.4 minimal port of upstream
+> [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp), maintained for
+> the Vivify Beat Saber ecosystem. See [README.md](README.md) for the diff
+> against upstream (what was stripped, what was rewritten to C# 7.3, what 2020+
+> APIs were shimmed). Most of this CLAUDE.md still applies, but anything that
+> mentions `Editor/Setup`, configurators, the wizard window, or Graphics/Build/
+> ProBuilder/Profiler/Vfx tools is no longer in the codebase.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What This Project Is
