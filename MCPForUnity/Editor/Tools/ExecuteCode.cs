@@ -321,11 +321,29 @@ namespace MCPForUnity.Editor.Tools
             bool hasNetstandard = allPaths.Any(p =>
                 string.Equals(Path.GetFileNameWithoutExtension(p), "netstandard", StringComparison.OrdinalIgnoreCase));
 
-            if (!hasNetstandard)
-                return allPaths;
+            IEnumerable<string> filtered = allPaths;
 
-            return allPaths.Where(p =>
-                !_codedomDuplicateAssemblies.Contains(Path.GetFileNameWithoutExtension(p))).ToArray();
+            if (hasNetstandard)
+            {
+                filtered = filtered.Where(p =>
+                    !_codedomDuplicateAssemblies.Contains(Path.GetFileNameWithoutExtension(p)));
+            }
+
+            // Drop DLLs whose metadata CSharpCodeProvider can't read (old PE32 Mono builds,
+            // native DLLs misnamed as managed, etc). Project-shipped third-party libs sometimes
+            // trip this and abort the entire compile with "does not contain valid metadata".
+            return filtered.Where(p =>
+            {
+                try
+                {
+                    System.Reflection.AssemblyName.GetAssemblyName(p);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }).ToArray();
         }
 
         // ──────────────────── Shared helpers ────────────────────
