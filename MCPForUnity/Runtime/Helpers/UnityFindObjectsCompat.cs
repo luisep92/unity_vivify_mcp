@@ -46,8 +46,12 @@ namespace MCPForUnity.Runtime.Helpers
             return UObject.FindObjectsByType(type,
                 includeInactive ? UnityEngine.FindObjectsInactive.Include : UnityEngine.FindObjectsInactive.Exclude,
                 UnityEngine.FindObjectsSortMode.None);
-#else
+#elif UNITY_2020_3_OR_NEWER
             return UObject.FindObjectsOfType(type, includeInactive);
+#else
+            // Unity 2019.4 only exposes FindObjectsOfType(Type); the includeInactive
+            // overload was added in 2020.3. Inactive objects are excluded here.
+            return UObject.FindObjectsOfType(type);
 #endif
         }
 
