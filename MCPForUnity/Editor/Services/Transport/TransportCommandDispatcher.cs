@@ -341,15 +341,8 @@ namespace MCPForUnity.Editor.Services.Transport
 
                 var parameters = command.@params ?? new JObject();
 
-                // Block execution of disabled resources
-                var resourceMeta = MCPServiceLocator.ResourceDiscovery.GetResourceMetadata(command.type);
-                if (resourceMeta != null && !MCPServiceLocator.ResourceDiscovery.IsResourceEnabled(command.type))
-                {
-                    pending.TrySetResult(SerializeError(
-                        $"Resource '{command.type}' is disabled in the Unity Editor."));
-                    RemovePending(id, pending);
-                    return;
-                }
+                // ResourceDiscovery service was removed in the 2019.4 minimal port.
+                object resourceMeta = null;
 
                 // Block execution of disabled tools
                 var toolMeta = MCPServiceLocator.ToolDiscovery.GetToolMetadata(command.type);
@@ -381,7 +374,7 @@ namespace MCPForUnity.Editor.Services.Transport
                             logStatus = "ERROR";
                             logError = t.Exception?.InnerException?.Message;
                         }
-                        else if (t.IsCompletedSuccessfully && t.Result != null)
+                        else if (t.Status == TaskStatus.RanToCompletion && t.Result != null)
                         {
                             try
                             {
@@ -429,8 +422,9 @@ namespace MCPForUnity.Editor.Services.Transport
             PendingCommand pending = null;
             lock (PendingLock)
             {
-                if (Pending.Remove(id, out pending))
+                if (Pending.TryGetValue(id, out pending))
                 {
+                    Pending.Remove(id);
                     UnhookUpdateIfIdle();
                 }
             }

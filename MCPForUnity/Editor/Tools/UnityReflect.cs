@@ -144,7 +144,7 @@ namespace MCPForUnity.Editor.Tools
             string normalizedName = NormalizeGenericName(className);
 
             // Check for ambiguity first (only for short names without namespace)
-            if (!normalizedName.Contains('.') && !normalizedName.Contains('`'))
+            if (!normalizedName.Contains(".") && !normalizedName.Contains("`"))
             {
                 var matches = FindAllTypesByShortName(normalizedName);
                 if (matches.Count > 1)
@@ -263,7 +263,7 @@ namespace MCPForUnity.Editor.Tools
             string memberName = memberResult.Value;
             string normalizedName = NormalizeGenericName(className);
 
-            if (!normalizedName.Contains('.') && !normalizedName.Contains('`'))
+            if (!normalizedName.Contains(".") && !normalizedName.Contains("`"))
             {
                 var matches = FindAllTypesByShortName(normalizedName);
                 if (matches.Count > 1)

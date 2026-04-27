@@ -149,7 +149,7 @@ namespace MCPForUnity.Editor.Helpers
 
         private static List<Type> FindCandidates(string query, Type requiredBaseType)
         {
-            bool isShort = !query.Contains('.');
+            bool isShort = !query.Contains(".");
             var loaded = AppDomain.CurrentDomain.GetAssemblies();
 
 #if UNITY_EDITOR

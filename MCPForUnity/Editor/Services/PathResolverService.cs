@@ -237,7 +237,7 @@ namespace MCPForUnity.Editor.Services
             try
             {
                 // Check if the path is just a command name (no directory separator)
-                bool isBareCommand = !uvxPath.Contains('/') && !uvxPath.Contains('\\');
+                bool isBareCommand = !uvxPath.Contains("/") && !uvxPath.Contains("\\");
 
                 if (isBareCommand)
                 {
