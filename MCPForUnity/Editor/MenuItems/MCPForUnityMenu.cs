@@ -1,3 +1,4 @@
+using MCPForUnity.Editor.Constants;
 using MCPForUnity.Editor.Services;
 using UnityEditor;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace MCPForUnity.Editor.MenuItems
             else
             {
                 _ = bridge.StartAsync();
-                Debug.Log("[MCP] Bridge start requested.");
+                Debug.Log($"[MCP] Bridge start requested (mode: {(EditorConfigurationCache.Instance.UseHttpTransport ? "HTTP" : "stdio")}).");
             }
         }
 
@@ -26,7 +27,21 @@ namespace MCPForUnity.Editor.MenuItems
         public static void BridgeStatus()
         {
             var bridge = MCPServiceLocator.Bridge;
-            Debug.Log($"[MCP] Bridge running: {bridge.IsRunning}");
+            Debug.Log($"[MCP] Bridge running: {bridge.IsRunning} (mode: {(EditorConfigurationCache.Instance.UseHttpTransport ? "HTTP" : "stdio")}, port: {bridge.CurrentPort})");
+        }
+
+        [MenuItem("Window/MCP For Unity/Use Stdio Transport", priority = 20)]
+        public static void UseStdioTransport()
+        {
+            EditorConfigurationCache.Instance.SetUseHttpTransport(false);
+            Debug.Log("[MCP] Transport set to stdio. Restart the bridge if it was running.");
+        }
+
+        [MenuItem("Window/MCP For Unity/Use HTTP Transport", priority = 21)]
+        public static void UseHttpTransport()
+        {
+            EditorConfigurationCache.Instance.SetUseHttpTransport(true);
+            Debug.Log("[MCP] Transport set to HTTP. Restart the bridge if it was running.");
         }
     }
 }
