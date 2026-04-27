@@ -416,13 +416,17 @@ namespace MCPForUnity.Editor.Tools.Prefabs
             MaterialPropertyBlock block = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(block, slot);
 
-            // Try the standard color property names
+            // Try the standard color property names. MaterialPropertyBlock.HasColor was
+            // added in 2021.1; in 2019.4 GetColor returns Color.clear if the property
+            // isn't set on the block, so use that as the heuristic.
             string[] colorProps = { "_BaseColor", "_Color" };
             foreach (string prop in colorProps)
             {
-                if (mat.HasProperty(prop) && block.HasColor(prop))
+                if (!mat.HasProperty(prop)) continue;
+                Color c = block.GetColor(prop);
+                if (c != Color.clear)
                 {
-                    mat.SetColor(prop, block.GetColor(prop));
+                    mat.SetColor(prop, c);
                 }
             }
         }
