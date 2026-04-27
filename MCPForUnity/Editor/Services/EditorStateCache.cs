@@ -303,14 +303,10 @@ namespace MCPForUnity.Editor.Services
             bool isPlaying = EditorApplication.isPlaying;
             bool isPaused = EditorApplication.isPaused;
             bool isUpdating = EditorApplication.isUpdating;
-            bool testsRunning = TestRunStatus.IsRunning;
+            bool testsRunning = false;
 
             var activityPhase = "idle";
-            if (testsRunning)
-            {
-                activityPhase = "running_tests";
-            }
-            else if (isCompiling)
+            if (isCompiling)
             {
                 activityPhase = "compiling";
             }
@@ -386,9 +382,9 @@ namespace MCPForUnity.Editor.Services
             string scenePath = string.IsNullOrEmpty(scene.path) ? null : scene.path;
             string sceneGuid = !string.IsNullOrEmpty(scenePath) ? AssetDatabase.AssetPathToGUID(scenePath) : null;
 
-            bool testsRunning = TestRunStatus.IsRunning;
-            var testsMode = TestRunStatus.Mode?.ToString();
-            string currentJobId = TestJobManager.CurrentJobId;
+            bool testsRunning = false;
+            string testsMode = null;
+            string currentJobId = null;
             bool isFocused = InternalEditorUtility.isApplicationActive;
 
             var activityPhase = "idle";
@@ -473,19 +469,12 @@ namespace MCPForUnity.Editor.Services
                 },
                 Tests = new EditorStateTests
                 {
-                    IsRunning = testsRunning,
-                    Mode = testsMode,
-                    CurrentJobId = string.IsNullOrEmpty(currentJobId) ? null : currentJobId,
-                    StartedUnixMs = TestRunStatus.StartedUnixMs,
+                    IsRunning = false,
+                    Mode = null,
+                    CurrentJobId = null,
+                    StartedUnixMs = null,
                     StartedBy = "unknown",
-                    LastRun = TestRunStatus.FinishedUnixMs.HasValue
-                        ? new EditorStateLastRun
-                        {
-                            FinishedUnixMs = TestRunStatus.FinishedUnixMs,
-                            Result = "unknown",
-                            Counts = null
-                        }
-                        : null
+                    LastRun = null
                 },
                 Transport = new EditorStateTransport
                 {
@@ -494,7 +483,7 @@ namespace MCPForUnity.Editor.Services
                 },
                 Settings = new EditorStateSettings
                 {
-                    BatchExecuteMaxCommands = Tools.BatchExecute.GetMaxCommandsPerBatch()
+                    BatchExecuteMaxCommands = 0
                 }
             };
 

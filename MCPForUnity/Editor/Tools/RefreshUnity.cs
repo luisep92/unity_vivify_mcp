@@ -25,15 +25,6 @@ namespace MCPForUnity.Editor.Tools
             string compile = @params?["compile"]?.ToString() ?? "none";
             bool waitForReady = ParamCoercion.CoerceBool(@params?["wait_for_ready"], false);
 
-            if (TestRunStatus.IsRunning)
-            {
-                return new ErrorResponse("tests_running", new
-                {
-                    reason = "tests_running",
-                    retry_after_ms = 5000
-                });
-            }
-
             bool refreshTriggered = false;
             bool compileRequested = false;
 
@@ -148,7 +139,6 @@ namespace MCPForUnity.Editor.Tools
 
                     if (!EditorApplication.isCompiling
                         && !EditorApplication.isUpdating
-                        && !TestRunStatus.IsRunning
                         && !EditorApplication.isPlayingOrWillChangePlaymode)
                     {
                         EditorApplication.update -= Tick;

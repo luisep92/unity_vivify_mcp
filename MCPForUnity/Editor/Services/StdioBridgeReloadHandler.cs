@@ -5,7 +5,6 @@ using MCPForUnity.Editor.Constants;
 using MCPForUnity.Editor.Helpers;
 using MCPForUnity.Editor.Services.Transport;
 using MCPForUnity.Editor.Services.Transport.Transports;
-using MCPForUnity.Editor.Windows;
 using UnityEditor;
 
 namespace MCPForUnity.Editor.Services
@@ -174,7 +173,6 @@ namespace MCPForUnity.Editor.Services
                     {
                         McpLog.Debug($"[Stdio Reload] Resume succeeded on attempt {attempt}");
                         try { EditorPrefs.DeleteKey(EditorPrefKeys.ResumeStdioAfterReload); } catch { }
-                        MCPForUnityEditorWindow.RequestHealthVerification();
                         return;
                     }
 

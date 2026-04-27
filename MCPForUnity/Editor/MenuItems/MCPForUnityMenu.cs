@@ -1,5 +1,4 @@
-using MCPForUnity.Editor.Setup;
-using MCPForUnity.Editor.Windows;
+using MCPForUnity.Editor.Services;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,30 +6,27 @@ namespace MCPForUnity.Editor.MenuItems
 {
     public static class MCPForUnityMenu
     {
-        [MenuItem("Window/MCP For Unity/Toggle MCP Window %#m", priority = 1)]
-        public static void ToggleMCPWindow()
+        [MenuItem("Window/MCP For Unity/Toggle Bridge", priority = 1)]
+        public static void ToggleBridge()
         {
-            if (MCPForUnityEditorWindow.HasAnyOpenWindow())
+            var bridge = MCPServiceLocator.Bridge;
+            if (bridge.IsRunning)
             {
-                MCPForUnityEditorWindow.CloseAllOpenWindows();
+                _ = bridge.StopAsync();
+                Debug.Log("[MCP] Bridge stop requested.");
             }
             else
             {
-                MCPForUnityEditorWindow.ShowWindow();
+                _ = bridge.StartAsync();
+                Debug.Log("[MCP] Bridge start requested.");
             }
         }
 
-        [MenuItem("Window/MCP For Unity/Local Setup Window", priority = 2)]
-        public static void ShowSetupWindow()
+        [MenuItem("Window/MCP For Unity/Bridge Status", priority = 2)]
+        public static void BridgeStatus()
         {
-            SetupWindowService.ShowSetupWindow();
-        }
-
-
-        [MenuItem("Window/MCP For Unity/Edit EditorPrefs", priority = 3)]
-        public static void ShowEditorPrefsWindow()
-        {
-            EditorPrefsWindow.ShowWindow();
+            var bridge = MCPServiceLocator.Bridge;
+            Debug.Log($"[MCP] Bridge running: {bridge.IsRunning}");
         }
     }
 }
