@@ -274,22 +274,55 @@ namespace MCPForUnity.Editor.Tools
             // CodeDom needs the netstandard-aware filtered paths
             var filtered = FilterAssemblyPathsForCodeDom(assemblyPaths);
 
-            using (var provider = new CSharpCodeProvider())
+            // Retry loop: if csc.exe rejects a DLL it can't read metadata for,
+            // drop it from the reference set and try again. AssemblyName.GetAssemblyName
+            // isn't strict enough to predict which DLLs csc will accept - some legacy
+            // PE32 Mono builds (e.g. Newtonsoft.Json shipped with VivifyTemplate) parse
+            // as a name but blow up on full metadata read.
+            var pathSet = new HashSet<string>(filtered, StringComparer.OrdinalIgnoreCase);
+            const int maxRetries = 8;
+
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
-                var parameters = new CompilerParameters
+                using (var provider = new CSharpCodeProvider())
                 {
-                    GenerateInMemory = true,
-                    GenerateExecutable = false,
-                    TreatWarningsAsErrors = false,
-                };
+                    var parameters = new CompilerParameters
+                    {
+                        GenerateInMemory = true,
+                        GenerateExecutable = false,
+                        TreatWarningsAsErrors = false,
+                    };
 
-                foreach (var path in filtered)
-                    parameters.ReferencedAssemblies.Add(path);
+                    foreach (var path in pathSet)
+                        parameters.ReferencedAssemblies.Add(path);
 
-                var results = provider.CompileAssemblyFromSource(parameters, source);
+                    var results = provider.CompileAssemblyFromSource(parameters, source);
 
-                if (results.Errors.HasErrors)
-                {
+                    if (!results.Errors.HasErrors)
+                        return results.CompiledAssembly;
+
+                    // Look for the "Metadata file 'X' does not contain valid metadata" pattern
+                    // and drop X from the reference set, then retry.
+                    string badPath = null;
+                    foreach (CompilerError error in results.Errors)
+                    {
+                        if (error.IsWarning) continue;
+                        var match = System.Text.RegularExpressions.Regex.Match(
+                            error.ErrorText ?? string.Empty,
+                            @"Metadata file [`'""]([^`'""]+)[`'""] does not contain valid metadata",
+                            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (match.Success)
+                        {
+                            badPath = match.Groups[1].Value;
+                            break;
+                        }
+                    }
+
+                    if (badPath != null && pathSet.Remove(badPath) && attempt < maxRetries)
+                    {
+                        continue;
+                    }
+
                     foreach (CompilerError error in results.Errors)
                     {
                         if (!error.IsWarning)
@@ -300,9 +333,9 @@ namespace MCPForUnity.Editor.Tools
                     }
                     return null;
                 }
-
-                return results.CompiledAssembly;
             }
+
+            return null;
         }
 
         // CSharpCodeProvider can't resolve type-forwarding, so when netstandard.dll is loaded
