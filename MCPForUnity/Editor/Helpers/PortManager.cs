@@ -311,15 +311,17 @@ namespace MCPForUnity.Editor.Helpers
         {
             try
             {
-                using SHA1 sha1 = SHA1.Create();
-                byte[] bytes = Encoding.UTF8.GetBytes(input ?? string.Empty);
-                byte[] hashBytes = sha1.ComputeHash(bytes);
-                var sb = new StringBuilder();
-                foreach (byte b in hashBytes)
+                using (SHA1 sha1 = SHA1.Create())
                 {
-                    sb.Append(b.ToString("x2"));
+                    byte[] bytes = Encoding.UTF8.GetBytes(input ?? string.Empty);
+                    byte[] hashBytes = sha1.ComputeHash(bytes);
+                    var sb = new StringBuilder();
+                    foreach (byte b in hashBytes)
+                    {
+                        sb.Append(b.ToString("x2"));
+                    }
+                    return sb.ToString().Substring(0, 8); // short, sufficient for filenames
                 }
-                return sb.ToString().Substring(0, 8); // short, sufficient for filenames
             }
             catch
             {
