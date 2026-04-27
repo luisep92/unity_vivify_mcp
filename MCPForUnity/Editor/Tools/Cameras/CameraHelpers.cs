@@ -181,13 +181,15 @@ namespace MCPForUnity.Editor.Tools.Cameras
         internal static int ReadCinemachinePriority(Component cmCamera)
         {
             if (cmCamera == null) return 0;
-            using var so = new SerializedObject(cmCamera);
-            var priorityProp = so.FindProperty("Priority");
-            if (priorityProp == null) return 0;
-            var enabledProp = priorityProp.FindPropertyRelative("Enabled");
-            var valueProp = priorityProp.FindPropertyRelative("m_Value");
-            if (enabledProp != null && !enabledProp.boolValue) return 0;
-            return valueProp?.intValue ?? 0;
+            using (var so = new SerializedObject(cmCamera))
+            {
+                var priorityProp = so.FindProperty("Priority");
+                if (priorityProp == null) return 0;
+                var enabledProp = priorityProp.FindPropertyRelative("Enabled");
+                var valueProp = priorityProp.FindPropertyRelative("m_Value");
+                if (enabledProp != null && !enabledProp.boolValue) return 0;
+                return valueProp?.intValue ?? 0;
+            }
         }
 
         internal static bool SetReflectionProperty(Component component, string propertyName, object value)

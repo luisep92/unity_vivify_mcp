@@ -303,7 +303,7 @@ namespace MCPForUnity.Editor.Services.Transport
                 {
                     status = "error",
                     error = "Invalid JSON format",
-                    receivedText = commandText.Length > 50 ? commandText[..50] + "..." : commandText
+                    receivedText = commandText.Length > 50 ? commandText.Substring(0, 50) + "..." : commandText
                 };
                 pending.TrySetResult(JsonConvert.SerializeObject(invalidJsonResponse));
                 RemovePending(id, pending);

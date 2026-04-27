@@ -110,7 +110,7 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
 
             string fullPath = Path.Combine(
                 Application.dataPath,
-                path.StartsWith("Assets/") ? path[7..] : path
+                path.StartsWith("Assets/") ? path.Substring(7) : path
             );
             return Directory.Exists(fullPath);
         }
@@ -493,12 +493,14 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
                     {
                         string handshake = "WELCOME UNITY-MCP 1 FRAMING=1\n";
                         byte[] handshakeBytes = System.Text.Encoding.ASCII.GetBytes(handshake);
-                        using var cts = new CancellationTokenSource(FrameIOTimeoutMs);
+                        using (var cts = new CancellationTokenSource(FrameIOTimeoutMs))
+                        {
 #if NETSTANDARD2_1 || NET6_0_OR_GREATER
-                        await stream.WriteAsync(handshakeBytes.AsMemory(0, handshakeBytes.Length), cts.Token).ConfigureAwait(false);
+                            await stream.WriteAsync(handshakeBytes.AsMemory(0, handshakeBytes.Length), cts.Token).ConfigureAwait(false);
 #else
-                        await stream.WriteAsync(handshakeBytes, 0, handshakeBytes.Length, cts.Token).ConfigureAwait(false);
+                            await stream.WriteAsync(handshakeBytes, 0, handshakeBytes.Length, cts.Token).ConfigureAwait(false);
 #endif
+                        }
                         if (IsDebugEnabled()) McpLog.Info("Sent handshake FRAMING=1 (strict)", always: false);
                     }
                     catch (Exception ex)
@@ -570,24 +572,26 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
                             string response;
                             try
                             {
-                                using var respCts = new CancellationTokenSource(FrameIOTimeoutMs);
-                                var completed = await Task.WhenAny(tcs.Task, Task.Delay(FrameIOTimeoutMs, respCts.Token)).ConfigureAwait(false);
-                                if (completed == tcs.Task)
+                                using (var respCts = new CancellationTokenSource(FrameIOTimeoutMs))
                                 {
-                                    respCts.Cancel();
-                                    response = tcs.Task.Result;
-                                    Interlocked.Exchange(ref _consecutiveTimeouts, 0);
-                                }
-                                else
-                                {
-                                    int timeouts = Interlocked.Increment(ref _consecutiveTimeouts);
-                                    McpLog.Warn($"Command TCS timed out ({timeouts} consecutive)");
-                                    var timeoutResponse = new
+                                    var completed = await Task.WhenAny(tcs.Task, Task.Delay(FrameIOTimeoutMs, respCts.Token)).ConfigureAwait(false);
+                                    if (completed == tcs.Task)
                                     {
-                                        status = "error",
-                                        error = $"Command processing timed out after {FrameIOTimeoutMs} ms",
-                                    };
-                                    response = JsonConvert.SerializeObject(timeoutResponse);
+                                        respCts.Cancel();
+                                        response = tcs.Task.Result;
+                                        Interlocked.Exchange(ref _consecutiveTimeouts, 0);
+                                    }
+                                    else
+                                    {
+                                        int timeouts = Interlocked.Increment(ref _consecutiveTimeouts);
+                                        McpLog.Warn($"Command TCS timed out ({timeouts} consecutive)");
+                                        var timeoutResponse = new
+                                        {
+                                            status = "error",
+                                            error = $"Command processing timed out after {FrameIOTimeoutMs} ms",
+                                        };
+                                        response = JsonConvert.SerializeObject(timeoutResponse);
+                                    }
                                 }
                             }
                             catch (Exception ex)
@@ -672,28 +676,30 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
                     throw new IOException("Read timed out");
                 }
 
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel);
-                if (remainingTimeout != Timeout.Infinite)
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
                 {
-                    cts.CancelAfter(remainingTimeout);
-                }
-
-                try
-                {
-#if NETSTANDARD2_1 || NET6_0_OR_GREATER
-                    int read = await stream.ReadAsync(buffer.AsMemory(offset, remaining), cts.Token).ConfigureAwait(false);
-#else
-                    int read = await stream.ReadAsync(buffer, offset, remaining, cts.Token).ConfigureAwait(false);
-#endif
-                    if (read == 0)
+                    if (remainingTimeout != Timeout.Infinite)
                     {
-                        throw new IOException("Connection closed before reading expected bytes");
+                        cts.CancelAfter(remainingTimeout);
                     }
-                    offset += read;
-                }
-                catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
-                {
-                    throw new IOException("Read timed out");
+
+                    try
+                    {
+#if NETSTANDARD2_1 || NET6_0_OR_GREATER
+                        int read = await stream.ReadAsync(buffer.AsMemory(offset, remaining), cts.Token).ConfigureAwait(false);
+#else
+                        int read = await stream.ReadAsync(buffer, offset, remaining, cts.Token).ConfigureAwait(false);
+#endif
+                        if (read == 0)
+                        {
+                            throw new IOException("Connection closed before reading expected bytes");
+                        }
+                        offset += read;
+                    }
+                    catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
+                    {
+                        throw new IOException("Read timed out");
+                    }
                 }
             }
 
@@ -702,7 +708,9 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
 
         private static Task WriteFrameAsync(NetworkStream stream, byte[] payload)
         {
-            using var cts = new CancellationTokenSource(FrameIOTimeoutMs);
+            // The token is captured by the inner async method; we cannot wrap in using
+            // without changing semantics. Allocate without using - GC will reclaim.
+            var cts = new CancellationTokenSource(FrameIOTimeoutMs);
             return WriteFrameAsync(stream, payload, cts.Token);
         }
 
@@ -870,7 +878,7 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
                             status = "error",
                             error = "Invalid JSON format",
                             receivedText = commandText.Length > 50
-                                ? commandText[..50] + "..."
+                                ? commandText.Substring(0, 50) + "..."
                                 : commandText,
                         };
                         tcs.SetResult(JsonConvert.SerializeObject(invalidJsonResponse));
@@ -893,9 +901,11 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
             {
                 try
                 {
-                    using var cts = new CancellationTokenSource(FrameIOTimeoutMs);
-                    string response = await TransportCommandDispatcher.ExecuteCommandJsonAsync(payload, cts.Token).ConfigureAwait(true);
-                    completionSource.TrySetResult(response);
+                    using (var cts = new CancellationTokenSource(FrameIOTimeoutMs))
+                    {
+                        string response = await TransportCommandDispatcher.ExecuteCommandJsonAsync(payload, cts.Token).ConfigureAwait(true);
+                        completionSource.TrySetResult(response);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -914,7 +924,7 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
                         status = "error",
                         error = ex.Message,
                         receivedText = payload?.Length > 50
-                            ? payload[..50] + "..."
+                            ? payload.Substring(0, 50) + "..."
                             : payload,
                     };
                     completionSource.TrySetResult(JsonConvert.SerializeObject(response));
@@ -1069,15 +1079,17 @@ namespace MCPForUnity.Editor.Services.Transport.Transports
         {
             try
             {
-                using var sha1 = System.Security.Cryptography.SHA1.Create();
-                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(input ?? string.Empty);
-                byte[] hashBytes = sha1.ComputeHash(bytes);
-                var sb = new System.Text.StringBuilder();
-                foreach (byte b in hashBytes)
+                using (var sha1 = System.Security.Cryptography.SHA1.Create())
                 {
-                    sb.Append(b.ToString("x2"));
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(input ?? string.Empty);
+                    byte[] hashBytes = sha1.ComputeHash(bytes);
+                    var sb = new System.Text.StringBuilder();
+                    foreach (byte b in hashBytes)
+                    {
+                        sb.Append(b.ToString("x2"));
+                    }
+                    return sb.ToString().Substring(0, 8);
                 }
-                return sb.ToString()[..8];
             }
             catch
             {
