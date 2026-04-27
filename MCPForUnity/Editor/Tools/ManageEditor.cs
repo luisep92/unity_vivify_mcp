@@ -392,46 +392,17 @@ namespace MCPForUnity.Editor.Tools
         }
 
         // --- Package Deployment Methods ---
+        // PackageDeploymentService was removed in the 2019.4 minimal port.
+        // Server source is configured manually; deploy/restore are not exposed.
 
         private static object DeployPackage()
         {
-            try
-            {
-                var result = MCPServiceLocator.Deployment.DeployFromStoredSource();
-                if (!result.Success)
-                    return new ErrorResponse(result.Message);
-
-                return new SuccessResponse(result.Message, new
-                {
-                    source_path = result.SourcePath,
-                    target_path = result.TargetPath,
-                    backup_path = result.BackupPath
-                });
-            }
-            catch (Exception e)
-            {
-                return new ErrorResponse($"Deploy failed: {e.Message}");
-            }
+            return new ErrorResponse("deploy_package is not supported in the 2019.4 minimal port.");
         }
 
         private static object RestorePackage()
         {
-            try
-            {
-                var result = MCPServiceLocator.Deployment.RestoreLastBackup();
-                if (!result.Success)
-                    return new ErrorResponse(result.Message);
-
-                return new SuccessResponse(result.Message, new
-                {
-                    target_path = result.TargetPath,
-                    backup_path = result.BackupPath
-                });
-            }
-            catch (Exception e)
-            {
-                return new ErrorResponse($"Restore failed: {e.Message}");
-            }
+            return new ErrorResponse("restore_package is not supported in the 2019.4 minimal port.");
         }
 
         // --- Helper Methods ---

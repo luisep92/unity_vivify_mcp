@@ -1312,14 +1312,19 @@ namespace MCPForUnity.Editor.Tools.Prefabs
                     return new ErrorResponse($"Prefab asset not found at '{sanitizedPath}'.");
                 }
 
-                var prefabStage = PrefabStageUtility.OpenPrefab(sanitizedPath);
-                bool enteredStage = prefabStage != null
-                    && string.Equals(prefabStage.assetPath, sanitizedPath, StringComparison.OrdinalIgnoreCase)
+                // PrefabStageUtility.OpenPrefab(path) was added in Unity 2020.1. In 2019.4
+                // the route is AssetDatabase.OpenAsset, which lets the editor route the prefab
+                // through the experimental stage system.
+                bool opened = AssetDatabase.OpenAsset(prefabAsset);
+                var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+                bool enteredStage = opened
+                    && prefabStage != null
+                    && string.Equals(prefabStage.prefabAssetPath, sanitizedPath, StringComparison.OrdinalIgnoreCase)
                     && prefabStage.prefabContentsRoot != null;
 
                 if (!enteredStage)
                 {
-                    return new ErrorResponse($"Failed to open prefab stage for '{sanitizedPath}'. PrefabStageUtility.OpenPrefab did not enter the requested prefab stage.");
+                    return new ErrorResponse($"Failed to open prefab stage for '{sanitizedPath}'. AssetDatabase.OpenAsset did not enter the requested prefab stage.");
                 }
 
                 return new SuccessResponse(
@@ -1327,7 +1332,7 @@ namespace MCPForUnity.Editor.Tools.Prefabs
                     new
                     {
                         prefabPath = sanitizedPath,
-                        openedPrefabPath = prefabStage.assetPath,
+                        openedPrefabPath = prefabStage.prefabAssetPath,
                         rootName = prefabStage.prefabContentsRoot.name,
                         enteredPrefabStage = enteredStage
                     }
@@ -1349,7 +1354,7 @@ namespace MCPForUnity.Editor.Tools.Prefabs
                     return new ErrorResponse("Not currently in prefab editing mode. Open a prefab stage first with open_prefab_stage.");
                 }
 
-                string prefabPath = prefabStage.assetPath;
+                string prefabPath = prefabStage.prefabAssetPath;
                 EditorSceneManager.MarkSceneDirty(prefabStage.scene);
                 bool saved = EditorSceneManager.SaveScene(prefabStage.scene);
                 if (!saved)
@@ -1384,7 +1389,7 @@ namespace MCPForUnity.Editor.Tools.Prefabs
                     }
                 }
 
-                string prefabPath = prefabStage.assetPath;
+                string prefabPath = prefabStage.prefabAssetPath;
                 StageUtility.GoToMainStage();
                 return new SuccessResponse($"Exited prefab stage for '{prefabPath}'.", new { prefabPath });
             }

@@ -40,37 +40,9 @@ namespace MCPForUnity.Editor.Services
                 McpLog.Warn($"Shutdown cleanup: failed to stop transports: {ex.Message}");
             }
 
-            // 2) Stop local HTTP server if it was Unity-managed (best-effort).
-            try
-            {
-                bool useHttp = EditorConfigurationCache.Instance.UseHttpTransport;
-                string scope = string.Empty;
-                try { scope = EditorPrefs.GetString(EditorPrefKeys.HttpTransportScope, string.Empty); } catch { }
-
-                bool stopped = false;
-                bool httpLocalSelected =
-                    useHttp &&
-                    (string.Equals(scope, "local", StringComparison.OrdinalIgnoreCase)
-                     || (string.IsNullOrEmpty(scope) && MCPServiceLocator.Server.IsLocalUrl()));
-
-                if (httpLocalSelected)
-                {
-                    // StopLocalHttpServer is already guarded to only terminate processes that look like mcp-for-unity.
-                    // If it refuses to stop (e.g. URL was edited away from local), fall back to the Unity-managed stop.
-                    stopped = MCPServiceLocator.Server.StopLocalHttpServer();
-                }
-
-                // Always attempt to stop a Unity-managed server if one exists.
-                // This covers cases where the user switched transports (e.g. to stdio) or StopLocalHttpServer refused.
-                if (!stopped)
-                {
-                    MCPServiceLocator.Server.StopManagedLocalHttpServer();
-                }
-            }
-            catch (Exception ex)
-            {
-                McpLog.Warn($"Shutdown cleanup: failed to stop local HTTP server: {ex.Message}");
-            }
+            // 2) ServerManagementService was removed in the 2019.4 minimal port,
+            //    so there's no Unity-managed local HTTP server lifecycle to clean up.
+            //    Stdio transport stop above is sufficient for our single-agent setup.
         }
     }
 }
