@@ -6,6 +6,14 @@ Upstream declares `"unity": "2021.3"` and depends on post-2019 APIs and syntax: 
 
 > **Status**: working end-to-end against `VivifyTemplate` (Unity 2019.4.28f1, Beat Saber 1.34.2 + Aeroluna mods). Validated with `read_console`, `refresh_unity`, `execute_code` from Claude Code via stdio.
 
+## Why Unity 2019.4
+
+Vivify (the Beat Saber asset-bundle modding bridge) recommends **Unity 2019.4.28f1** as its target editor — that's the version BS's modding pipeline expects, and newer editors drift in the asset bundle format the game's loader accepts.
+
+Unity 2019.4 is end-of-life. Unity Hub flags it explicitly, and security advisories on the editor itself are no longer back-ported. **That matters for runtime applications; it doesn't matter for this fork.** The scope here is a local Editor workflow — opening a Unity project on your own machine to author asset bundles for an offline modding tool. There's no runtime, no network surface, no untrusted input. The EoL trade-off is acceptable in that envelope and not transferable to anyone shipping a game on 2019.4.
+
+If you're not in the Vivify / Beat Saber world, you almost certainly want [upstream `CoplayDev/unity-mcp`](https://github.com/CoplayDev/unity-mcp) on Unity 2021.3+ instead.
+
 ## How to use it (TL;DR)
 
 Assumes you have Unity 2019.4 installed, [`uv`](https://docs.astral.sh/uv/) on PATH, and Claude Code (CLI or VSCode extension).
