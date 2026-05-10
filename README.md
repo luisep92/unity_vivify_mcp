@@ -1,92 +1,92 @@
 # unity-mcp — Unity 2019.4 minimal port
 
-Fork minimal de [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp) adaptado a **Unity 2019.4 LTS**, motivado por el ecosistema Vivify de Beat Saber (la doc oficial de Vivify recomienda 2019.4.28f1 para máxima compatibilidad con BS).
+Minimal fork of [CoplayDev/unity-mcp](https://github.com/CoplayDev/unity-mcp) adapted to **Unity 2019.4 LTS**, motivated by the Vivify Beat Saber ecosystem (Vivify's official docs recommend 2019.4.28f1 for maximum BS compatibility).
 
-El upstream declara `"unity": "2021.3"` y depende de APIs y sintaxis post-2019: UI Toolkit con USS post-2021, `com.unity.nuget.newtonsoft-json` (registry 2020.1+), 41+ sites de C# 8/9 (switch expressions, range syntax, `using` declarations…). Este fork strippa lo que no usamos y reescribe el resto a APIs disponibles en 2019.4 + C# 7.3.
+Upstream declares `"unity": "2021.3"` and depends on post-2019 APIs and syntax: UI Toolkit with post-2021 USS, `com.unity.nuget.newtonsoft-json` (registry 2020.1+), 41+ C# 8/9 sites (switch expressions, range syntax, `using` declarations…). This fork strips out what we don't use and rewrites the rest to APIs available in 2019.4 + C# 7.3.
 
-> **Estado**: operativo end-to-end contra `VivifyTemplate` (Unity 2019.4.28f1, Beat Saber 1.34.2 + mods Aeroluna). Validado con `read_console`, `refresh_unity`, `execute_code` desde Claude Code via stdio.
+> **Status**: working end-to-end against `VivifyTemplate` (Unity 2019.4.28f1, Beat Saber 1.34.2 + Aeroluna mods). Validated with `read_console`, `refresh_unity`, `execute_code` from Claude Code via stdio.
 
-## Cómo se usa (TL;DR)
+## How to use it (TL;DR)
 
-Asume que tienes Unity 2019.4 instalado, [`uv`](https://docs.astral.sh/uv/) en PATH, y Claude Code (CLI o extensión VSCode).
+Assumes you have Unity 2019.4 installed, [`uv`](https://docs.astral.sh/uv/) on PATH, and Claude Code (CLI or VSCode extension).
 
 ```bash
-# 1. Clona el fork
+# 1. Clone the fork
 git clone git@github.com:luisep92/unity_vivify_mcp.git unity-mcp
 cd unity-mcp
 
-# 2. Engancha el upstream original (opcional, para futuros rebases / PR)
+# 2. Hook up the original upstream (optional, for future rebases / PR)
 git remote add upstream https://github.com/CoplayDev/unity-mcp.git
 
-# 3. Registra el server Python en Claude Code (scope user para que la extensión VSCode lo vea)
-claude mcp add -s user unity-mcp -- uv run --directory <ruta-absoluta>/unity-mcp/Server mcp-for-unity --transport stdio
+# 3. Register the Python server in Claude Code (user scope so the VSCode extension sees it)
+claude mcp add -s user unity-mcp -- uv run --directory <absolute-path>/unity-mcp/Server mcp-for-unity --transport stdio
 
-# 4. En tu proyecto Unity, añade el package en Packages/manifest.json:
-#    "com.coplaydev.unity-mcp": "file:<ruta-relativa-al-Packages>/unity-mcp/MCPForUnity"
+# 4. In your Unity project, add the package in Packages/manifest.json:
+#    "com.coplaydev.unity-mcp": "file:<relative-path-to-Packages>/unity-mcp/MCPForUnity"
 ```
 
-Abre Unity con tu proyecto. En `Window > MCP For Unity`:
+Open Unity with your project. In `Window > MCP For Unity`:
 
-1. **Use Stdio Transport** (la primera vez — fija el modo en EditorPrefs).
-2. **Toggle Bridge** (arranca el listener TCP en port 6400).
-3. **Bridge Status** debe loggear `running: True (mode: stdio, port: 6400)`.
+1. **Use Stdio Transport** (first time — pins the mode in EditorPrefs).
+2. **Toggle Bridge** (starts the TCP listener on port 6400).
+3. **Bridge Status** should log `running: True (mode: stdio, port: 6400)`.
 
-Reinicia Claude Code (cierra y reabre la extensión VSCode o el CLI). En la nueva sesión deben aparecer las herramientas `mcp__unity-mcp__*` (`read_console`, `refresh_unity`, `execute_code`, `manage_asset`, `manage_animation`, etc.). Smoke test rápido: pide a Claude `read_console` con count 5; debe devolver entradas reales de la Console de Unity.
+Restart Claude Code (close and reopen the VSCode extension or the CLI). The new session should expose the `mcp__unity-mcp__*` tools (`read_console`, `refresh_unity`, `execute_code`, `manage_asset`, `manage_animation`, etc.). Quick smoke test: ask Claude to run `read_console` with count 5; it should return real entries from the Unity Console.
 
-### Prerequisitos del proyecto host
+### Host project prerequisites
 
-- **Newtonsoft.Json.dll en algún sitio del proyecto.** El asmdef de este package lo lista como `precompiledReferences` con `overrideReferences: false`, así que recoge cualquier DLL llamado `Newtonsoft.Json.dll` que esté en el proyecto. VivifyTemplate ya trae uno en `Assets/VivifyTemplate/Exporter/Dependencies/`. Si tu proyecto no lo trae, copia uno (NuGet 13.0.x net45) a `Plugins/` del proyecto.
-- **Unity 2019.4.x.** Versiones más nuevas pueden funcionar pero pierdes el motivo del fork; usa upstream directamente si estás en 2021.3+.
+- **Newtonsoft.Json.dll somewhere in the project.** This package's asmdef lists it as `precompiledReferences` with `overrideReferences: false`, so it picks up any DLL named `Newtonsoft.Json.dll` present in the project. VivifyTemplate already ships one at `Assets/VivifyTemplate/Exporter/Dependencies/`. If your project doesn't include one, copy a NuGet 13.0.x net45 build to the project's `Plugins/`.
+- **Unity 2019.4.x.** Newer versions may work but defeat the purpose of the fork; use upstream directly if you're on 2021.3+.
 
-## Qué se borró respecto a upstream
+## What was removed from upstream
 
-Strip agresivo orientado a Claude Code stdio + workflow Vivify. Los commits están etiquetados `Drop ...` para cherry-pick.
+Aggressive strip targeting Claude Code stdio + Vivify workflow. Commits are tagged `Drop ...` to be cherry-pickable.
 
-| Borrado | Motivo |
+| Removed | Reason |
 |---|---|
-| `Editor/Windows/` (wizard UI Toolkit completo) | UI Toolkit con USS/UXML post-2021 |
-| `Editor/Setup/` (Roslyn installer, skill installer, sync) | No necesario; configuramos a mano |
-| 21 client configurators (`Cursor`, `Windsurf`, `Codex`, `Cline`, `Gemini`, etc.) | Solo usamos `claude mcp add` |
-| `Editor/Clients/` entero | El Claude Code configurator nunca se invocaba sin la wizard |
+| `Editor/Windows/` (full UI Toolkit wizard) | UI Toolkit with USS/UXML is post-2021 |
+| `Editor/Setup/` (Roslyn installer, skill installer, sync) | Not needed; configured manually |
+| 21 client configurators (`Cursor`, `Windsurf`, `Codex`, `Cline`, `Gemini`, etc.) | We only use `claude mcp add` |
+| All of `Editor/Clients/` | The Claude Code configurator was never invoked without the wizard |
 | `Editor/Migrations/`, `Editor/Dependencies/`, `McpCiBoot.cs` | Fresh install, no migration/CI |
-| Services no-core: `PackageDeployment`, `PackageUpdate`, `PackageJobManager`, `ServerManagement`, `TestRunner`, `TestJobManager`, `ResourceDiscovery`, `EditorPrefsWindowService`, `ClientConfigurationService` | El server Python lo lanza Claude Code; Unity es listener pasivo |
-| `Editor/Tools/Build/` + `ManageBuild.cs` | Vivify usa su propio build (F5) |
-| `Editor/Tools/{ProBuilder, Profiler, Vfx, Graphics}/` | APIs post-2020 (`LightingSettings`, `ProfilerCategory`, `Unity.Profiling.LowLevel.Unsafe`) o no-aplicables |
-| `Editor/Tools/{ManagePackages, ManageUI, ManageTexture, BatchExecute, RunTests, GetTestJob}.cs` | Fuera de scope para Aline |
-| `Editor/Resources/Scene/{Volumes, RenderingStats, RendererFeatures}Resource.cs` | Dependían de Graphics tools borradas |
-| `Editor/Resources/Tests/` | Dependía de TestRunner |
-| `External/Tommy.cs` (~2k LOC TOML parser) | Solo lo usaba `CodexConfigHelper` (borrado) |
-| `Helpers/{McpConfigurationHelper, CodexConfigHelper, ConfigJsonBuilder}.cs` | Solo usados por `Editor/Clients/` |
-| HTTP transport handlers (`HttpAutoStartHandler`, `HttpBridgeReloadHandler`) | Stdio basta para single-agent Claude Code |
+| Non-core services: `PackageDeployment`, `PackageUpdate`, `PackageJobManager`, `ServerManagement`, `TestRunner`, `TestJobManager`, `ResourceDiscovery`, `EditorPrefsWindowService`, `ClientConfigurationService` | The Python server is launched by Claude Code; Unity is a passive listener |
+| `Editor/Tools/Build/` + `ManageBuild.cs` | Vivify uses its own build (F5) |
+| `Editor/Tools/{ProBuilder, Profiler, Vfx, Graphics}/` | Post-2020 APIs (`LightingSettings`, `ProfilerCategory`, `Unity.Profiling.LowLevel.Unsafe`) or not applicable |
+| `Editor/Tools/{ManagePackages, ManageUI, ManageTexture, BatchExecute, RunTests, GetTestJob}.cs` | Out of scope for Aline |
+| `Editor/Resources/Scene/{Volumes, RenderingStats, RendererFeatures}Resource.cs` | Depended on the removed Graphics tools |
+| `Editor/Resources/Tests/` | Depended on TestRunner |
+| `External/Tommy.cs` (~2k LOC TOML parser) | Only used by `CodexConfigHelper` (removed) |
+| `Helpers/{McpConfigurationHelper, CodexConfigHelper, ConfigJsonBuilder}.cs` | Only used by `Editor/Clients/` |
+| HTTP transport handlers (`HttpAutoStartHandler`, `HttpBridgeReloadHandler`) | stdio is enough for single-agent Claude Code |
 
-## Qué se mantuvo
+## What stayed
 
-Listener bridge stdio + dispatcher de comandos + un subset de tools válidos para el workflow Vivify:
+stdio bridge listener + command dispatcher + a subset of tools valid for the Vivify workflow:
 
-- **Tools Animation**: `ControllerCreate`, `ControllerLayers`, `ControllerBlendTrees`, `ClipCreate`, `ClipPresets`, `AnimatorRead`, `AnimatorControl`, `ManageAnimation`.
-- **Tools Asset/Material/Shader/Script**: `ManageAsset`, `ManageMaterial`, `ManageShader`, `ManageScript`, `ManageScriptableObject`.
-- **Tools Prefab/Scene/GameObject**: `ManagePrefabs`, `ManageScene`, `ManageGameObject`, `ManageComponents`, `FindGameObjects`.
-- **Tools editor**: `RefreshUnity`, `ReadConsole`, `ExecuteCode`, `ExecuteMenuItem`, `ManageEditor`, `UnityReflect`.
-- **Tools Camera/Physics**: `ManageCamera` (Cinemachine), `ManagePhysics` (sin tocar — funciona en 2019.4).
-- **Bridge**: `StdioBridgeHost` + `TransportManager` + `BridgeControlService` + `MCPServiceLocator` (pelado).
-- **Server Python**: sin cambios. El upstream Python es 2019-agnostic.
+- **Animation tools**: `ControllerCreate`, `ControllerLayers`, `ControllerBlendTrees`, `ClipCreate`, `ClipPresets`, `AnimatorRead`, `AnimatorControl`, `ManageAnimation`.
+- **Asset/Material/Shader/Script tools**: `ManageAsset`, `ManageMaterial`, `ManageShader`, `ManageScript`, `ManageScriptableObject`.
+- **Prefab/Scene/GameObject tools**: `ManagePrefabs`, `ManageScene`, `ManageGameObject`, `ManageComponents`, `FindGameObjects`.
+- **Editor tools**: `RefreshUnity`, `ReadConsole`, `ExecuteCode`, `ExecuteMenuItem`, `ManageEditor`, `UnityReflect`.
+- **Camera/Physics tools**: `ManageCamera` (Cinemachine), `ManagePhysics` (untouched — works on 2019.4).
+- **Bridge**: `StdioBridgeHost` + `TransportManager` + `BridgeControlService` + `MCPServiceLocator` (stripped down).
+- **Python server**: unchanged. Upstream Python is 2019-agnostic.
 
-## Qué se reescribió a C# 7.3
+## What was rewritten to C# 7.3
 
-Unity 2019.4 fija el lenguaje en C# 7.3. Los siguientes patrones fueron reemplazados en todos los ficheros mantenidos:
+Unity 2019.4 fixes the language at C# 7.3. The following patterns were replaced across all retained files:
 
-- **Switch expressions** (`x switch { ... }`) → switch statements clásicos.
+- **Switch expressions** (`x switch { ... }`) → classic switch statements.
 - **Negated declaration patterns** (`x is not T y`) → `!(x is T y)`.
 - **Null-coalescing assignment** (`??=`) → `if (x == null) x = ...`.
-- **Target-typed `new()`** → constructor explícito (`new Dictionary<K,V>()`).
+- **Target-typed `new()`** → explicit constructor (`new Dictionary<K,V>()`).
 - **Range/index syntax** (`s[..n]`, `s[n..]`, `s[..^n]`) → `Substring` / `Skip`.
 - **`using` declarations** (`using var x = ...;`) → `using (var x = ...) { ... }` blocks.
-- **`#nullable disable`** directives → eliminadas (no soportadas por el preprocesador 7.3).
-- **Null-forgiving operator** (`x!.Foo`) → eliminado (asumiendo no-null).
+- **`#nullable disable`** directives → removed (not supported by the 7.3 preprocessor).
+- **Null-forgiving operator** (`x!.Foo`) → removed (assuming non-null).
 
-## Qué se shim-eó a APIs 2019.4
+## What was shimmed to 2019.4 APIs
 
-- `PrefabStageUtility` y `PrefabStage` viven en `UnityEditor.Experimental.SceneManagement` (no en `UnityEditor.SceneManagement` — eso es 2020.1+).
+- `PrefabStageUtility` and `PrefabStage` live in `UnityEditor.Experimental.SceneManagement` (not `UnityEditor.SceneManagement` — that's 2020.1+).
 - `PrefabStage.assetPath` → `PrefabStage.prefabAssetPath`.
 - `PrefabStageUtility.OpenPrefab(string)` → `AssetDatabase.OpenAsset(prefabAsset)` + `GetCurrentPrefabStage()`.
 - `string.Contains(char)` → `string.Contains(string)`.
@@ -95,67 +95,67 @@ Unity 2019.4 fija el lenguaje en C# 7.3. Los siguientes patrones fueron reemplaz
 - `Math.Clamp(int, int, int)` → `Math.Max(min, Math.Min(max, value))`.
 - `Task.IsCompletedSuccessfully` → `Task.Status == TaskStatus.RanToCompletion`.
 - `Dictionary.Remove(TKey, out TValue)` → `TryGetValue` + `Remove(TKey)`.
-- `MaterialPropertyBlock.HasColor` → heurística con `GetColor` y comparación contra `Color.clear`.
-- `Object.FindObjectsOfType(Type, bool includeInactive)` → `FindObjectsOfType(Type)` (perdemos `includeInactive` en 2019.4).
+- `MaterialPropertyBlock.HasColor` → heuristic using `GetColor` and comparison against `Color.clear`.
+- `Object.FindObjectsOfType(Type, bool includeInactive)` → `FindObjectsOfType(Type)` (loses `includeInactive` on 2019.4).
 - `Selection.count` → `Selection.objects.Length`.
 
-## Cambios de comportamiento
+## Behaviour changes
 
-- **Stdio es transport por defecto** (era HTTP). El minimal port solo tiene sentido como single-agent contra Claude Code; HTTP requería el `ServerManagementService` que se borró.
-- **Menu Items reducidos** (`Window > MCP For Unity`):
-  - `Toggle Bridge` — arranca/para el listener stdio.
-  - `Bridge Status` — loggea estado, modo, port.
-  - `Use Stdio Transport` / `Use HTTP Transport` — flip de `EditorPrefs.UseHttpTransport`.
-- **`execute_code` con retry-on-bad-DLL.** El compilador CodeDom de .NET Framework abortaba la compilación entera al encontrar una DLL con metadata corrupta (la `Newtonsoft.Json.dll` legacy de VivifyTemplate). Ahora el tool detecta el patrón "Metadata file 'X' does not contain valid metadata", droppea esa DLL del set de referencias y reintenta hasta 8 veces.
+- **stdio is the default transport** (was HTTP). The minimal port only makes sense as single-agent against Claude Code; HTTP required `ServerManagementService`, which was removed.
+- **Reduced menu items** (`Window > MCP For Unity`):
+  - `Toggle Bridge` — starts/stops the stdio listener.
+  - `Bridge Status` — logs state, mode, port.
+  - `Use Stdio Transport` / `Use HTTP Transport` — flips `EditorPrefs.UseHttpTransport`.
+- **`execute_code` with retry-on-bad-DLL.** The .NET Framework CodeDom compiler aborted the entire compilation when it hit a DLL with corrupt metadata (the legacy `Newtonsoft.Json.dll` from VivifyTemplate). The tool now detects the "Metadata file 'X' does not contain valid metadata" pattern, drops that DLL from the reference set, and retries up to 8 times.
 
-## Limitaciones conocidas
+## Known limitations
 
-- **No `run_tests`** — Unity Test Framework no expuesto vía MCP (TestRunnerService borrado). Si lo necesitas, cherry-pick desde upstream.
-- **No Graphics tools** — sin volumes, light baking, render stats, renderer features. Las APIs son post-2020.
-- **`execute_code` salta DLLs ilegibles silenciosamente.** Las DLLs droppeadas no aparecen en el reference set; código que use sus tipos falla de compilación con un mensaje confuso. Caso real: VivifyTemplate's `Newtonsoft.Json.dll` (legacy PE32 Mono build) — usa `Newtonsoft.Json.Linq` desde tools mantenidos del package, no desde `execute_code` ad-hoc.
-- **`includeInactive` no funciona en `FindObjectsOfType`** — Unity 2019.4 no expone esa overload. Los tools que la pidan ignoran el parámetro.
-- **Sin wizard UI** — toda la configuración via menu items + EditorPrefs + `claude mcp add` desde terminal.
+- **No `run_tests`** — Unity Test Framework not exposed via MCP (TestRunnerService removed). If you need it, cherry-pick from upstream.
+- **No Graphics tools** — no volumes, light baking, render stats, renderer features. Those APIs are post-2020.
+- **`execute_code` silently skips unreadable DLLs.** Dropped DLLs don't appear in the reference set; code that uses their types fails to compile with a confusing message. Real case: VivifyTemplate's `Newtonsoft.Json.dll` (legacy PE32 Mono build) — use `Newtonsoft.Json.Linq` from the package's retained tools, not from ad-hoc `execute_code`.
+- **`includeInactive` does nothing in `FindObjectsOfType`** — Unity 2019.4 doesn't expose that overload. Tools that pass it ignore the parameter.
+- **No wizard UI** — all configuration via menu items + EditorPrefs + `claude mcp add` from the terminal.
 
-## Relación con upstream
+## Upstream relationship
 
 ```bash
-# Inspeccionar el delta del fork
+# Inspect the fork delta
 git log --oneline upstream/beta..HEAD
 
-# Sync con upstream (cuando suban changes)
+# Sync with upstream (when they ship changes)
 git fetch upstream
-git rebase upstream/beta   # o cherry-pick selectivo
+git rebase upstream/beta   # or selective cherry-pick
 
-# Para PR upstream: hacer fork de CoplayDev/unity-mcp en GitHub UI,
-# añadirlo como remote (e.g. coplay-fork), pushear el branch y abrir PR contra `beta`.
+# For an upstream PR: fork CoplayDev/unity-mcp in the GitHub UI,
+# add it as a remote (e.g. coplay-fork), push the branch, and open a PR against `beta`.
 ```
 
-Los commits están organizados con un cambio conceptual cada uno y mensajes descriptivos en inglés, pensados para que un PR upstream sea limpio. La superficie afectada es grande — más viable como reference que como merge directo.
+Commits are organised one conceptual change each, with descriptive English messages, intended to make a clean upstream PR. The affected surface is large — more viable as a reference than as a direct merge.
 
-## Estructura del repo
+## Repo layout
 
 ```
-MCPForUnity/                  # Package Unity (lo que se referencia desde manifest.json)
+MCPForUnity/                  # Unity package (what manifest.json references)
   Editor/                     # Bridge + tools + services
-  Runtime/                    # Helpers serializables (Newtonsoft converters, etc.)
-  package.json                # unity: 2019.4 (no 2021.3)
-Server/                       # Python MCP server (sin cambios respecto a upstream)
+  Runtime/                    # Serializable helpers (Newtonsoft converters, etc.)
+  package.json                # unity: 2019.4 (not 2021.3)
+Server/                       # Python MCP server (unchanged from upstream)
   src/main.py
   pyproject.toml              # mcp-for-unity = "main:main"
-CLAUDE.md                     # Doc original del upstream
-README.md                     # Este archivo
+CLAUDE.md                     # Original upstream doc
+README.md                     # This file
 ```
 
 ## Troubleshooting
 
-**El menú `Window > MCP For Unity` no aparece tras instalar el package.**
-Compilación silenciosa fallida. Mira si `Library/ScriptAssemblies/` existe en tu proyecto Unity — si no hay DLLs ahí, hay un conflict de DLL o asmdef roto. Causa típica: dos `Newtonsoft.Json.dll` solapando plataformas. Fix: dejar solo uno.
+**The `Window > MCP For Unity` menu doesn't appear after installing the package.**
+Silent compilation failure. Check whether `Library/ScriptAssemblies/` exists in your Unity project — if there are no DLLs there, there's a DLL conflict or a broken asmdef. Typical cause: two `Newtonsoft.Json.dll` files with overlapping platforms. Fix: keep only one.
 
-**`Toggle Bridge` arranca pero falla con "Connection failed... WebSocket".**
-Estás en modo HTTP. `Window > MCP For Unity > Use Stdio Transport`, luego Toggle Bridge.
+**`Toggle Bridge` starts but fails with "Connection failed... WebSocket".**
+You're in HTTP mode. Go to `Window > MCP For Unity > Use Stdio Transport`, then Toggle Bridge.
 
-**`claude mcp list` muestra unity-mcp Connected pero la extensión VSCode no ve los tools.**
-Scope problem. Reinstala con `claude mcp add -s user ...` (no scope-local).
+**`claude mcp list` shows unity-mcp Connected but the VSCode extension doesn't see the tools.**
+Scope problem. Reinstall with `claude mcp add -s user ...` (not local scope).
 
-**`execute_code` falla con "Metadata file '...Newtonsoft.Json.dll' does not contain valid metadata".**
-Bug ya corregido — actualiza al último commit del fork.
+**`execute_code` fails with "Metadata file '...Newtonsoft.Json.dll' does not contain valid metadata".**
+Already fixed — update to the latest commit on the fork.
